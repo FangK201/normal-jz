@@ -4,7 +4,7 @@ import Overview from '../view/Overview.vue'
 import Settings from '../view/Setting.vue'
 import Setup from '../view/Setup.vue'
 import AccountDetail from '../view/AccountDetail.vue'
-import { storage } from '../utils/storage'
+import { storage } from '../utils/storage.js'
 
 const routes = [
   { path: '/', component: Home },
