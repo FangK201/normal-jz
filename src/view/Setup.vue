@@ -195,48 +195,59 @@ function finishSetup() {
 
 <style scoped>
 .setup-container {
-  padding: 20px;
+  padding: 16px;
   background: #fff7ef;
   min-height: 100vh;
+  box-sizing: border-box;
 }
 h2 {
   color: #d98c2f;
   text-align: center;
+  font-size: 24px;
+  margin-top: 20px;
 }
 .subtitle {
   text-align: center;
   color: #b97f3a;
-  margin-bottom: 30px;
+  margin-bottom: 24px;
+  font-size: 14px;
 }
 .step {
   background: white;
   border-radius: 24px;
-  padding: 20px;
-  margin-top: 20px;
+  padding: 16px;
+  margin-top: 16px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 .icon-item-edit {
   display: flex;
+  flex-direction: column;
   gap: 8px;
-  margin-bottom: 12px;
-  align-items: center;
+  margin-bottom: 16px;
+  align-items: stretch;
 }
 .icon-item-edit input {
-  flex: 1;
-  padding: 8px;
+  width: 100%;
+  padding: 12px;
   border-radius: 40px;
   border: 1px solid #ffe0b5;
+  font-size: 16px;
+  box-sizing: border-box;
 }
 .actions {
   display: flex;
   justify-content: space-between;
-  margin-top: 20px;
+  margin-top: 24px;
   gap: 12px;
 }
 .btn, .btn-outline {
-  padding: 8px 20px;
+  flex: 1;
+  padding: 12px;
   border-radius: 40px;
   cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: center;
 }
 .btn {
   background: #d98c2f;
@@ -261,22 +272,32 @@ h2 {
 }
 .balance-input input {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   border-radius: 40px;
   border: 1px solid #ffe0b5;
+  font-size: 16px;
+  box-sizing: border-box;
 }
 
 .amount-range {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-top: 8px;
 }
 
 .amount-range input {
-  width: 80px;
-  padding: 8px;
+  flex: 1;
+  padding: 12px;
   border-radius: 40px;
   border: 1px solid #ffe0b5;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.amount-range span {
+  color: #64748b;
+  font-size: 16px;
 }
 
 .meal-time-input {
@@ -286,6 +307,7 @@ h2 {
 .meal-time-input label {
   display: block;
   margin-bottom: 6px;
+  font-size: 16px;
 }
 
 .time-range {
@@ -296,17 +318,24 @@ h2 {
 
 .time-range input {
   flex: 1;
-  padding: 8px;
+  padding: 12px;
   border-radius: 40px;
   border: 1px solid #ffe0b5;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.time-range span {
+  color: #64748b;
+  font-size: 16px;
 }
 
 .account-setup-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 12px;
   margin-bottom: 16px;
-  padding: 12px;
+  padding: 16px;
   border: 1px solid #ffe0b5;
   border-radius: 12px;
 }
@@ -315,75 +344,35 @@ h2 {
   display: flex;
   flex-direction: column;
   flex: 1;
+  gap: 8px;
 }
 
 .account-info input {
-  padding: 8px;
+  padding: 12px;
   border-radius: 40px;
   border: 1px solid #ffe0b5;
-  margin-bottom: 8px;
+  font-size: 16px;
+  box-sizing: border-box;
 }
 
 .account-toggle {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-top: 8px;
 }
 
 .toggle-btn {
-  padding: 6px 12px;
-  border-radius: 40px;
-  border: 1px solid #d98c2f;
-  background: white;
-  color: #d98c2f;
-  cursor: pointer;
-}
-
-.toggle-btn.active {
-  background: #d98c2f;
-  color: white;
-}
-
-.delete-btn {
-  background: #ef4444;
-  color: white;
-  border: none;
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.fixed-expense-item {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 12px;
-  align-items: center;
-}
-
-.fixed-expense-item input {
-  flex: 1;
-  padding: 8px;
-  border-radius: 40px;
-  border: 1px solid #ffe0b5;
-}
-
-.fixed-expense-item input[type="number"] {
-  width: 100px;
-}
-
-.account-toggle {
-  margin-left: 12px;
-}
-
-.toggle-btn {
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: 20px;
   border: 1px solid #d98c2f;
   background: white;
   color: #d98c2f;
   cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
   transition: all 0.3s;
+  align-self: flex-start;
 }
 
 .toggle-btn.active {
@@ -394,5 +383,74 @@ h2 {
 .toggle-btn:hover {
   background: #d98c2f;
   color: white;
+}
+
+.delete-btn {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  align-self: flex-start;
+}
+
+.fixed-expense-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: stretch;
+}
+
+.fixed-expense-item input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 40px;
+  border: 1px solid #ffe0b5;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.fixed-expense-item input[type="number"] {
+  width: 100%;
+}
+
+.btn-outline {
+  margin-top: 16px;
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .setup-container {
+    padding: 12px;
+  }
+  
+  h2 {
+    font-size: 20px;
+  }
+  
+  .step {
+    padding: 12px;
+  }
+  
+  .icon-item-edit input,
+  .amount-range input,
+  .time-range input,
+  .account-info input,
+  .fixed-expense-item input {
+    padding: 10px;
+    font-size: 14px;
+  }
+  
+  .btn, .btn-outline {
+    padding: 10px;
+    font-size: 14px;
+  }
 }
 </style>

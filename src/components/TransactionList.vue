@@ -8,7 +8,8 @@
       <div 
         v-for="tx in group.items" 
         :key="tx.id"
-        style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9;"
+        style="display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; cursor: pointer;"
+        @click="handleTransactionClick(tx)"
       >
         <div style="display: flex; align-items: center; gap: 12px;">
           <span :style="{ 
@@ -42,6 +43,12 @@ const props = defineProps({
     default: () => []
   }
 })
+
+const emit = defineEmits(['edit'])
+
+function handleTransactionClick(transaction) {
+  emit('edit', transaction)
+}
 
 const groupedTransactions = computed(() => {
   const groups = {}

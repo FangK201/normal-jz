@@ -34,16 +34,16 @@
               </div>
       <div style="margin-top: 12px;">
         <div style="font-size: 14px; color: #64748b;">当前余额</div>
-        <div style="font-size: 36px; font-weight: 700; color: #1e293b;">¥{{ primaryAccount.balance }}</div>
+        <div style="font-size: 36px; font-weight: 700; color: #1e293b;">¥{{ formatAmount(primaryAccount.balance) }}</div>
       </div>
       <div style="display: flex; gap: 24px; margin-top: 16px;">
         <div>
           <span style="color: #64748b; font-size: 14px;">本月收入</span>
-          <span style="margin-left: 8px; font-weight: 500; color: #10b981;">¥{{ primaryMonthlyIncome }}</span>
+          <span style="margin-left: 8px; font-weight: 500; color: #10b981;">¥{{ formatAmount(primaryMonthlyIncome) }}</span>
         </div>
         <div>
           <span style="color: #64748b; font-size: 14px;">本月支出</span>
-          <span style="margin-left: 8px; font-weight: 500; color: #ef4444;">¥{{ primaryMonthlyExpense }}</span>
+          <span style="margin-left: 8px; font-weight: 500; color: #ef4444;">¥{{ formatAmount(primaryMonthlyExpense) }}</span>
         </div>
       </div>
     </div>
@@ -64,7 +64,31 @@
     <!-- 交易列表 -->
     <div class="card">
       <h3>最近交易</h3>
-      <TransactionList :transactions="recentTransactions" />
+      <TransactionList :transactions="recentTransactions" @edit="handleEditTransaction" />
+    </div>
+  </div>
+
+  <!-- 编辑交易模态框 -->
+  <div v-if="showEditModal" class="modal-overlay" @click="showEditModal = false">
+    <div class="modal-content" @click.stop>
+      <h3>编辑交易</h3>
+      <div class="form-group">
+        <label>类别</label>
+        <input v-model="editForm.category" type="text" />
+      </div>
+      <div class="form-group">
+        <label>金额</label>
+        <input v-model.number="editForm.amount" type="number" placeholder="0" />
+      </div>
+      <div class="form-group">
+        <label>日期</label>
+        <input v-model="editForm.date" type="date" />
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline" @click="showEditModal = false">取消</button>
+        <button class="btn" @click="saveEditedTransaction">保存</button>
+        <button class="btn-danger" @click="deleteTransaction">删除</button>
+      </div>
     </div>
   </div>
 </template>
@@ -85,6 +109,16 @@ const fixedExpenses = ref([])
 // 计算属性
 const primaryAccount = ref({})
 const showAccountSwitch = ref(false)
+
+// 编辑交易相关状态
+const showEditModal = ref(false)
+const editForm = ref({})
+const currentEditingTransaction = ref(null)
+
+// 金额格式化函数
+function formatAmount(amount) {
+  return parseFloat(amount).toFixed(2)
+}
 
 function switchAccount(accountId) {
   const acc = accounts.value.find(a => a.id === accountId)
@@ -133,6 +167,12 @@ function startVoiceRecognition() {
     return
   }
   
+  // 检查是否为HTTPS环境
+  if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+    alert('语音识别功能需要在HTTPS环境下使用，请在安全连接中访问')
+    return
+  }
+  
   // 检查麦克风权限
   if ('mediaDevices' in navigator) {
     navigator.mediaDevices.getUserMedia({ audio: true })
@@ -142,7 +182,13 @@ function startVoiceRecognition() {
       })
       .catch((error) => {
         console.error('麦克风权限错误:', error)
-        alert('请授予麦克风权限以使用语音记账功能')
+        if (error.name === 'NotAllowedError') {
+          alert('请在浏览器设置中允许麦克风访问权限')
+        } else if (error.name === 'NotFoundError') {
+          alert('未找到麦克风设备，请检查设备连接')
+        } else {
+          alert('获取麦克风权限失败，请重试')
+        }
       })
   } else {
     // 旧浏览器，直接尝试
@@ -247,6 +293,76 @@ function recordExpense(data) {
 function saveData() {
   storage.set('accounts', accounts.value)
   storage.set('transactions', transactions.value)
+}
+
+// 编辑交易相关函数
+function handleEditTransaction(transaction) {
+  currentEditingTransaction.value = transaction
+  editForm.value = {
+    category: transaction.category || transaction.mealType,
+    amount: transaction.amount || transaction.total,
+    date: transaction.date
+  }
+  showEditModal.value = true
+}
+
+function saveEditedTransaction() {
+  if (!editForm.value.category || editForm.value.amount <= 0) {
+    alert('请填写完整信息')
+    return
+  }
+  
+  const index = transactions.value.findIndex(t => t.id === currentEditingTransaction.value.id)
+  if (index !== -1) {
+    // 计算金额变化
+    const oldAmount = currentEditingTransaction.value.amount || currentEditingTransaction.value.total
+    const newAmount = editForm.value.amount
+    const amountDiff = newAmount - oldAmount
+    
+    // 更新交易
+    transactions.value[index] = {
+      ...currentEditingTransaction.value,
+      category: editForm.value.category,
+      amount: newAmount,
+      date: editForm.value.date
+    }
+    
+    // 更新账本余额
+    const account = accounts.value.find(a => a.id === currentEditingTransaction.value.accountId)
+    if (account) {
+      if (currentEditingTransaction.value.type === 'income') {
+        account.balance += amountDiff
+      } else {
+        account.balance -= amountDiff
+      }
+    }
+    
+    saveData()
+    showEditModal.value = false
+  }
+}
+
+function deleteTransaction() {
+  if (confirm('确定要删除这笔交易吗？')) {
+    const index = transactions.value.findIndex(t => t.id === currentEditingTransaction.value.id)
+    if (index !== -1) {
+      // 更新账本余额
+      const amount = currentEditingTransaction.value.amount || currentEditingTransaction.value.total
+      const account = accounts.value.find(a => a.id === currentEditingTransaction.value.accountId)
+      if (account) {
+        if (currentEditingTransaction.value.type === 'income') {
+          account.balance -= amount
+        } else {
+          account.balance += amount
+        }
+      }
+      
+      // 删除交易
+      transactions.value.splice(index, 1)
+      saveData()
+      showEditModal.value = false
+    }
+  }
 }
 
 // 生命周期
@@ -561,6 +677,105 @@ function checkAndRecordFixedExpenses() {
 
 .voice-btn:hover {
   background: #2563eb;
+}
+
+/* 模态框样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modal-footer {
+  margin-top: 24px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn-outline {
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  color: #4b5563;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-outline:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.btn-danger {
+  padding: 8px 16px;
+  border: 1px solid #ef4444;
+  border-radius: 8px;
+  background: #ef4444;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+  background: #dc2626;
+  border-color: #dc2626;
 }
 </style>
 
