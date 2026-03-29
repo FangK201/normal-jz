@@ -1,8 +1,9 @@
+// import { createRouter, createWebHistory } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../view/home.vue'
 import Overview from '../view/Overview.vue'
 import Settings from '../view/Setting.vue'
-import Setup from '../view/Setup.vue'
+import Setup from 'E:/成品/FKone/fangKuai/src/view/Setup.vue'
 import AccountDetail from '../view/AccountDetail.vue'
 import { storage } from '../utils/storage.js'
 
