@@ -61,6 +61,21 @@
       </button>
     </div>
 
+    <!-- 文本输入记账（语音输入的替代方案） -->
+    <div class="card">
+      <h3>📝 文本记账</h3>
+      <input 
+        v-model="textInput" 
+        type="text" 
+        placeholder="请输入记账内容，例如：医疗，花费350元"
+        class="text-input"
+        @keyup.enter="parseTextInput"
+      />
+      <button class="text-input-btn" @click="parseTextInput">
+        确认记账
+      </button>
+    </div>
+
     <!-- 交易列表 -->
     <div class="card">
       <h3>最近交易</h3>
@@ -115,9 +130,27 @@ const showEditModal = ref(false)
 const editForm = ref({})
 const currentEditingTransaction = ref(null)
 
+// 文本输入记账相关状态
+const textInput = ref('')
+
 // 金额格式化函数
 function formatAmount(amount) {
   return parseFloat(amount).toFixed(2)
+}
+
+// 解析文本输入
+function parseTextInput() {
+  const text = textInput.value.trim()
+  if (!text) {
+    alert('请输入记账内容')
+    return
+  }
+  
+  // 使用与语音输入相同的解析逻辑
+  parseVoiceInput(text)
+  
+  // 清空输入框
+  textInput.value = ''
 }
 
 function switchAccount(accountId) {
@@ -677,6 +710,42 @@ function checkAndRecordFixedExpenses() {
 
 .voice-btn:hover {
   background: #2563eb;
+}
+
+/* 文本输入记账样式 */
+.text-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 16px;
+  margin-bottom: 12px;
+  box-sizing: border-box;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.text-input-btn {
+  width: 100%;
+  padding: 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.text-input-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
 }
 
 /* 模态框样式 */
