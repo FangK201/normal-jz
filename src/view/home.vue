@@ -127,29 +127,65 @@ function isCurrentMonth(dateString) {
 }
 
 function startVoiceRecognition() {
-  if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    const recognition = new SpeechRecognition()
-    recognition.lang = 'zh-CN'
-    recognition.continuous = false
-    recognition.interimResults = false
-    
-    alert('请说出记账内容，例如：医疗，花费350元')
-    
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript
-      console.log('语音识别结果:', transcript)
-      parseVoiceInput(transcript)
-    }
-    
-    recognition.onerror = (event) => {
-      console.error('语音识别错误:', event.error)
-      alert('语音识别失败，请重试')
-    }
-    
-    recognition.start()
+  // 检查浏览器支持
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('您的浏览器不支持语音识别功能，请使用Chrome或Edge浏览器')
+    return
+  }
+  
+  // 检查麦克风权限
+  if ('mediaDevices' in navigator) {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(() => {
+        // 权限获取成功，开始语音识别
+        startRecognition()
+      })
+      .catch((error) => {
+        console.error('麦克风权限错误:', error)
+        alert('请授予麦克风权限以使用语音记账功能')
+      })
   } else {
-    alert('您的浏览器不支持语音识别功能')
+    // 旧浏览器，直接尝试
+    startRecognition()
+  }
+}
+
+function startRecognition() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+  const recognition = new SpeechRecognition()
+  recognition.lang = 'zh-CN'
+  recognition.continuous = false
+  recognition.interimResults = false
+  
+  // 移动端友好的提示
+  if (/(Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini)/i.test(navigator.userAgent)) {
+    // 移动端使用更简洁的提示
+    const confirmation = confirm('准备开始语音记账，请说出例如："医疗，花费350元"\n\n点击确定开始录音')
+    if (!confirmation) return
+  } else {
+    alert('请说出记账内容，例如：医疗，花费350元')
+  }
+  
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript
+    console.log('语音识别结果:', transcript)
+    parseVoiceInput(transcript)
+  }
+  
+  recognition.onerror = (event) => {
+    console.error('语音识别错误:', event.error)
+    alert('语音识别失败，请重试')
+  }
+  
+  recognition.onend = () => {
+    console.log('语音识别结束')
+  }
+  
+  try {
+    recognition.start()
+  } catch (error) {
+    console.error('启动语音识别失败:', error)
+    alert('启动语音识别失败，请重试')
   }
 }
 
