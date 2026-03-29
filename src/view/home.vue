@@ -61,21 +61,6 @@
       </button>
     </div>
 
-    <!-- 文本输入记账（语音输入的替代方案） -->
-    <div class="card">
-      <h3>📝 文本记账</h3>
-      <input 
-        v-model="textInput" 
-        type="text" 
-        placeholder="请输入记账内容，例如：医疗，花费350元"
-        class="text-input"
-        @keyup.enter="parseTextInput"
-      />
-      <button class="text-input-btn" @click="parseTextInput">
-        确认记账
-      </button>
-    </div>
-
     <!-- 交易列表 -->
     <div class="card">
       <h3>最近交易</h3>
@@ -130,27 +115,9 @@ const showEditModal = ref(false)
 const editForm = ref({})
 const currentEditingTransaction = ref(null)
 
-// 文本输入记账相关状态
-const textInput = ref('')
-
 // 金额格式化函数
 function formatAmount(amount) {
   return parseFloat(amount).toFixed(2)
-}
-
-// 解析文本输入
-function parseTextInput() {
-  const text = textInput.value.trim()
-  if (!text) {
-    alert('请输入记账内容')
-    return
-  }
-  
-  // 使用与语音输入相同的解析逻辑
-  parseVoiceInput(text)
-  
-  // 清空输入框
-  textInput.value = ''
 }
 
 function switchAccount(accountId) {
@@ -236,14 +203,44 @@ function startRecognition() {
   recognition.continuous = false
   recognition.interimResults = false
   
-  // 移动端友好的提示
-  if (/(Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini)/i.test(navigator.userAgent)) {
-    // 移动端使用更简洁的提示
-    const confirmation = confirm('准备开始语音记账，请说出例如："医疗，花费350元"\n\n点击确定开始录音')
-    if (!confirmation) return
-  } else {
-    alert('请说出记账内容，例如：医疗，花费350元')
-  }
+  // 显示格式提示
+  const formatMessage = '请按照以下格式说出记账内容：\n\n"类别，花费XX元"\n例如："医疗，花费350元"\n\n3秒后开始录音...'
+  
+  // 创建倒计时提示
+  const countdownElement = document.createElement('div')
+  countdownElement.style.position = 'fixed'
+  countdownElement.style.top = '50%'
+  countdownElement.style.left = '50%'
+  countdownElement.style.transform = 'translate(-50%, -50%)'
+  countdownElement.style.background = 'rgba(0, 0, 0, 0.8)'
+  countdownElement.style.color = 'white'
+  countdownElement.style.padding = '20px'
+  countdownElement.style.borderRadius = '10px'
+  countdownElement.style.zIndex = '1000'
+  countdownElement.style.textAlign = 'center'
+  countdownElement.style.fontSize = '16px'
+  countdownElement.innerHTML = formatMessage
+  document.body.appendChild(countdownElement)
+  
+  // 3秒倒计时
+  let countdown = 3
+  const countdownInterval = setInterval(() => {
+    countdown--
+    if (countdown > 0) {
+      countdownElement.innerHTML = formatMessage.replace('3秒后开始录音...', `${countdown}秒后开始录音...`)
+    } else {
+      clearInterval(countdownInterval)
+      document.body.removeChild(countdownElement)
+      
+      // 开始录音
+      try {
+        recognition.start()
+      } catch (error) {
+        console.error('启动语音识别失败:', error)
+        alert('语音录入失败：启动录音失败，请重试')
+      }
+    }
+  }, 1000)
   
   recognition.onresult = (event) => {
     const transcript = event.results[0][0].transcript
@@ -253,47 +250,78 @@ function startRecognition() {
   
   recognition.onerror = (event) => {
     console.error('语音识别错误:', event.error)
-    alert('语音识别失败，请重试')
+    alert('语音录入失败：录音过程中发生错误，请重试')
   }
   
   recognition.onend = () => {
     console.log('语音识别结束')
   }
-  
-  try {
-    recognition.start()
-  } catch (error) {
-    console.error('启动语音识别失败:', error)
-    alert('启动语音识别失败，请重试')
-  }
 }
 
 function parseVoiceInput(text) {
-  // 更灵活的正则表达式，匹配多种格式
-  const match = text.match(/(.+?)\s*(?:，|,)?\s*(花费|花了|支出|用了|花掉|消费)(\d+)元/)
+  // 同义词映射
+  const synonyms = {
+    '早饭': '早餐',
+    '早点': '早餐',
+    '早饭钱': '早餐',
+    '早饭费': '早餐',
+    '午餐': '午餐',
+    '中饭': '午餐',
+    '午饭': '午餐',
+    '晚饭': '晚餐',
+    '晚餐': '晚餐',
+    '宵夜': '夜宵',
+    '夜宵': '夜宵',
+    '打车': '交通',
+    '坐车': '交通',
+    '打车费': '交通',
+    '车费': '交通',
+    '购物': '购物',
+    '买东西': '购物',
+    '网购': '购物',
+    '快递': '快递',
+    '邮费': '快递',
+    '医疗': '医疗',
+    '看病': '医疗',
+    '买药': '医疗',
+    '药费': '医疗'
+  }
+  
+  // 更灵活的正则表达式，匹配多种格式，支持小数
+  const match = text.match(/(.+?)\s*(?:，|,)?\s*(花费|花了|支出|用了|花掉|消费|花)(\d+(?:\.\d+)?)元/)
   if (match) {
-    const category = match[1]
+    let category = match[1].trim()
     const amount = parseFloat(match[3])
+    
+    // 处理同义词
+    if (synonyms[category]) {
+      category = synonyms[category]
+    }
     
     if (category && amount > 0) {
       recordExpense({ category, amount })
     } else {
-      alert('语音输入格式不正确，请重试')
+      alert('语音录入失败：无法识别金额，请重试')
     }
   } else {
-    // 尝试更简单的格式：类别 金额
-    const simpleMatch = text.match(/(.+?)\s*(\d+)元/)
+    // 尝试更简单的格式：类别 金额，支持小数
+    const simpleMatch = text.match(/(.+?)\s*(\d+(?:\.\d+)?)元/)
     if (simpleMatch) {
-      const category = simpleMatch[1]
+      let category = simpleMatch[1].trim()
       const amount = parseFloat(simpleMatch[2])
+      
+      // 处理同义词
+      if (synonyms[category]) {
+        category = synonyms[category]
+      }
       
       if (category && amount > 0) {
         recordExpense({ category, amount })
       } else {
-        alert('语音输入格式不正确，请重试')
+        alert('语音录入失败：无法识别金额，请重试')
       }
     } else {
-      alert('语音输入格式不正确，请重试')
+      alert('语音录入失败：格式不正确，请说"类别，花费XX元"')
     }
   }
 }
@@ -321,6 +349,9 @@ function recordExpense(data) {
   
   // 保存数据
   saveData()
+  
+  // 显示成功提示
+  alert(`语音录入成功：${data.category}，花费${data.amount}元`)
 }
 
 function saveData() {
@@ -710,42 +741,6 @@ function checkAndRecordFixedExpenses() {
 
 .voice-btn:hover {
   background: #2563eb;
-}
-
-/* 文本输入记账样式 */
-.text-input {
-  width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 16px;
-  margin-bottom: 12px;
-  box-sizing: border-box;
-}
-
-.text-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.text-input-btn {
-  width: 100%;
-  padding: 12px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.text-input-btn:hover {
-  background: #2563eb;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
 }
 
 /* 模态框样式 */
